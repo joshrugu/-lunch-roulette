@@ -643,7 +643,30 @@
       }
     }
 
-  </style>
+  
+.wheel-zone{
+  background:rgba(255,255,255,.75);
+  border:1px solid rgba(36,23,15,.08);
+  border-radius:24px;
+  padding:14px;
+  box-shadow:0 14px 34px rgba(43,27,14,.14);
+}
+.wheel-wrap{
+  background:transparent!important;
+  box-shadow:none!important;
+  border:none!important;
+  min-height:auto!important;
+  padding:10px 10px 54px!important;
+}
+.result-card{
+  background:transparent!important;
+  box-shadow:none!important;
+  border:none!important;
+  padding:0!important;
+  margin-top:8px;
+}
+
+</style>
 </head>
 
 <body>
@@ -657,12 +680,10 @@
       <div class="pointer"></div>
       <div class="wheel-wrap">
         <canvas id="wheel" width="900" height="900"></canvas>
-        <div class="hub">SPIN<br>THE<br>FORK</div>
+        
         <button id="spinBtn" class="wheel-spin">🎡 Spin</button>
       </div>
-    </section>
-
-    <section class="panel result-card">
+    <div class="panel result-card">
       <div class="label">Today’s Lunch Destiny</div>
       <div id="category">🍴 Awaiting hunger signal</div>
       <div id="food">Ready to spin?</div>

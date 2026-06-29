@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Lunch Roulette</title>
+  <meta name="theme-color" content="#fffaf2" />
+  <meta name="description" content="Spin the office Lunch Roulette and let fate choose your lunch." />
+  <link rel="manifest" href="manifest.webmanifest" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+
+  <style>
+    :root {
+      --text: #24170f;
+      --card: rgba(255,255,255,.78);
+      --shadow: 0 24px 70px rgba(43, 27, 14, .18);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 15%, #fff0b8, transparent 32%),
+        radial-gradient(circle at 85% 20%, #ffd7e8, transparent 34%),
+        radial-gradient(circle at 50% 90%, #dff0ff, transparent 36%),
+        #fffaf2;
+      overflow-x: hidden;
+    }
+
+    .page {
+      width: min(1180px, 94vw);
+      margin: 0 auto;
+      padding: 34px 0 44px;
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap: 34px;
+      align-items: center;
+    }
+
+    header {
+      grid-column: 1 / -1;
+      text-align: center;
+    }
+
+    .badge {
+      display: inline-flex;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.65);
+      border: 1px solid rgba(36,23,15,.08);
+      box-shadow: 0 10px 30px rgba(36,23,15,.07);
+      font-weight: 850;
+      font-size: 14px;
+    }
+
+    h1 {
+      margin: 14px 0 8px;
+      font-size: clamp(42px, 7vw, 84px);
+      line-height: .95;
+      letter-spacing: -3px;
+    }
+
+    .subtitle {
+      margin: 0 auto;
+      max-width: 760px;
+      font-size: clamp(16px, 2vw, 20px);
+      opacity: .78;
+    }
+
+    .wheel-zone {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 620px;
+    }
+
+    .pointer {
+      position: absolute;
+      top: 23px;
+      z-index: 4;
+      width: 0;
+      height: 0;
+      border-left: 24px solid transparent;
+      border-right: 24px solid transparent;
+      border-top: 52px solid #24170f;
+      filter: drop-shadow(0 7px 8px rgba(0,0,0,.2));
+    }
+
+    .wheel-wrap {
+      position: relative;
+      width: min(560px, 92vw);
+      height: min(560px, 92vw);
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: linear-gradient(145deg, rgba(255,255,255,.9), rgba(255,255,255,.35));
+      box-shadow: var(--shadow);
+    }
+
+    canvas {
+      width: 94%;
+      height: 94%;
+      border-radius: 50%;
+      transition: transform 5.8s cubic-bezier(.12,.7,.08,1);
+      box-shadow: inset 0 0 0 12px rgba(255,255,255,.7), 0 16px 34px rgba(67,43,20,.18);
+    }
+
+    .hub {
+      position: absolute;
+      width: 128px;
+      height: 128px;
+      border-radius: 50%;
+      background: #fff;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-weight: 950;
+      font-size: 16px;
+      box-shadow: 0 12px 25px rgba(0,0,0,.18);
+      border: 8px solid rgba(36,23,15,.08);
+      user-select: none;
+    }
+
+    .panel {
+      background: var(--card);
+      backdrop-filter: blur(18px);
+      border: 1px solid rgba(36,23,15,.08);
+      box-shadow: var(--shadow);
+      border-radius: 34px;
+      padding: 28px;
+    }
+
+    .result-card {
+      min-height: 440px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .label {
+      font-size: 13px;
+      font-weight: 950;
+      text-transform: uppercase;
+      letter-spacing: 1.4px;
+      opacity: .58;
+    }
+
+    #category {
+      display: inline-flex;
+      width: fit-content;
+      border-radius: 999px;
+      padding: 10px 14px;
+      font-weight: 900;
+      background: rgba(255,255,255,.75);
+      margin: 12px 0 18px;
+    }
+
+    #food {
+      font-size: clamp(42px, 5vw, 64px);
+      line-height: 1.02;
+      margin: 4px 0 18px;
+      letter-spacing: -1.7px;
+      font-weight: 950;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin: 6px 0 22px;
+    }
+
+    .detail {
+      background: rgba(255,255,255,.58);
+      border: 1px solid rgba(36,23,15,.07);
+      border-radius: 18px;
+      padding: 13px 14px;
+      font-weight: 800;
+    }
+
+    .detail span {
+      display: block;
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: .9px;
+      opacity: .55;
+      margin-bottom: 4px;
+    }
+
+    #fortune {
+      font-size: 17px;
+      line-height: 1.5;
+      opacity: .84;
+      margin: 0 0 24px;
+    }
+
+    button {
+      appearance: none;
+      border: 0;
+      border-radius: 999px;
+      padding: 17px 24px;
+      font-size: 18px;
+      font-weight: 950;
+      cursor: pointer;
+      color: #fff;
+      background: #24170f;
+      box-shadow: 0 16px 30px rgba(36,23,15,.22);
+      transition: transform .16s ease, opacity .16s ease;
+    }
+
+    button:hover { transform: translateY(-2px); }
+    button:active { transform: translateY(1px); }
+    button:disabled { opacity: .5; cursor: wait; }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .ghost {
+      color: #24170f;
+      background: rgba(255,255,255,.75);
+      box-shadow: none;
+      border: 1px solid rgba(36,23,15,.1);
+    }
+
+    .legend {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+
+    .legend-item {
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,.58);
+      border: 1px solid rgba(36,23,15,.07);
+      font-weight: 850;
+      text-align: center;
+    }
+
+
+    .install-tip {
+      grid-column: 1 / -1;
+      text-align: center;
+      margin-top: -10px;
+    }
+
+    #installBtn {
+      display: none;
+      color: #24170f;
+      background: rgba(255,255,255,.75);
+      box-shadow: none;
+      border: 1px solid rgba(36,23,15,.1);
+      font-size: 15px;
+      padding: 12px 18px;
+    }
+
+    .tiny {
+      grid-column: 1 / -1;
+      text-align: center;
+      opacity: .62;
+      font-size: 13px;
+    }
+
+    .confetti {
+      position: fixed;
+      width: 10px;
+      height: 14px;
+      top: -20px;
+      pointer-events: none;
+      animation: fall 1.9s linear forwards;
+      z-index: 999;
+    }
+
+    @keyframes fall {
+      to {
+        transform: translateY(110vh) rotate(720deg);
+        opacity: .8;
+      }
+    }
+
+    @media (max-width: 900px) {
+      .page { grid-template-columns: 1fr; }
+      .wheel-zone { min-height: auto; }
+      .legend { grid-template-columns: 1fr 1fr; }
+      .pointer { top: -12px; }
+      .detail-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="page">
+    <header>
+<h1>Lunch Roulette</h1>
+      <p class="subtitle">Spin a category, then reveal the food. Less tiny-wheel text, more lunchtime theatre.</p>
+    </header>
+
+    <section class="wheel-zone">
+      <div class="pointer"></div>
+      <div class="wheel-wrap">
+        <canvas id="wheel" width="900" height="900"></canvas>
+        <div class="hub">SPIN<br>THE<br>FORK</div>
+      </div>
+    </section>
+
+    <section class="panel result-card">
+      <div class="label">Today’s Lunch Destiny</div>
+      <div id="category">🍴 Awaiting hunger signal</div>
+      <div id="food">Ready to spin?</div>
+
+      <div class="detail-grid">
+        <div class="detail"><span>Budget</span><div id="budget">RM?</div></div>
+        <div class="detail"><span>Challenge</span><div id="challenge">Spin first</div></div>
+      </div>
+
+      <p id="fortune">Your lunch fate is currently marinating. Press the button and let the office food oracle speak.</p>
+
+      <div class="actions">
+        <button id="spinBtn">🎡 Spin Category</button>
+        <button class="ghost" id="copyBtn">📋 Copy Result</button>
+      </div>
+    </section>
+
+    <section class="legend">
+      <div class="legend-item">🍛 Local Rice</div>
+      <div class="legend-item">🍜 Noodles</div>
+      <div class="legend-item">🌏 International</div>
+      <div class="legend-item">🎲 Chaos & Lucky</div>
+    </section>
+
+
+    <div class="install-tip">
+      <button id="installBtn">📲 Install Lunch Roulette</button>
+    </div>
+
+    <p class="tiny">Disclaimer: This wheel is powered by hunger, questionable luck, and office peer pressure. Results are final unless your stomach files an appeal.</p>
+  </main>
+
+  <script>
+    const categories = [
+      {
+        name: "🍛 Malaysian Rice",
+        color: "#ffd166",
+        foods: ["Nasi Ayam", "Nasi Lemak", "Nasi Kandar", "Nasi Campur", "Ayam Gepuk", "Ayam Penyet", "Briyani", "Banana Leaf Rice", "Claypot Chicken Rice", "Hainanese Chicken Rice", "Roast Duck Rice", "Fried Rice", "Nasi Padang", "Kam Heong Rice"]
+      },
+      {
+        name: "🍜 Malaysian Noodles",
+        color: "#f4a261",
+        foods: ["Pan Mee", "Curry Mee", "Sarawak Laksa", "Asam Laksa", "Mee Goreng", "Hokkien Mee", "Wantan Mee", "Kolo Mee", "Prawn Mee", "Mee Soto", "Mee Rebus", "Char Kuey Teow", "Dry Chili Pan Mee", "Ipoh Hor Fun"]
+      },
+      {
+        name: "🥟 Hawker Favourites",
+        color: "#ffafcc",
+        foods: ["Dim Sum", "Yong Tau Foo", "Lok Lok", "Satay", "Chee Cheong Fun", "Curry Chee Cheong Fun", "Roti Canai", "Roti Telur", "Murtabak", "Pasembur", "Rojak", "Oyster Omelette", "Otak-Otak"]
+      },
+      {
+        name: "🍔 Burgers & Sandwiches",
+        color: "#a0c4ff",
+        foods: ["Burger", "Chicken Burger", "Beef Burger", "Sandwich", "Club Sandwich", "Chicken Wrap", "Hot Dog", "Subway-style Sandwich", "Grilled Cheese"]
+      },
+      {
+        name: "🍕 Western",
+        color: "#bdb2ff",
+        foods: ["Pizza", "Pasta", "Steak", "Fish & Chips", "Mac & Cheese", "Chicken Chop", "Lamb Chop", "Mushroom Soup & Garlic Bread", "Mixed Grill"]
+      },
+      {
+        name: "🍣 Japanese",
+        color: "#80ed99",
+        foods: ["Sushi", "Ramen", "Bento", "Donburi", "Japanese Curry Rice", "Udon", "Soba", "Gyoza", "Onigiri", "Katsu Don"]
+      },
+      {
+        name: "🇰🇷 Korean",
+        color: "#90dbf4",
+        foods: ["Korean Fried Chicken", "Bibimbap", "Bulgogi", "Kimchi Stew", "Tteokbokki", "Kimbap", "Japchae", "Ramyeon"]
+      },
+      {
+        name: "🌮 Mexican & Middle Eastern",
+        color: "#ffc6ff",
+        foods: ["Tacos", "Burrito", "Shawarma", "Kebab", "Falafel Wrap", "Quesadilla", "Chicken Rice Bowl", "Hummus Plate"]
+      },
+      {
+        name: "🥗 Healthy Choices",
+        color: "#caffbf",
+        foods: ["Caesar Salad", "Chicken Salad", "Grain Bowl", "Poke Bowl", "Chicken Wrap", "Vegetarian Rice", "Soup & Bread", "Baked Potato", "Fruit Bowl"]
+      },
+      {
+        name: "☕ Café Lunch",
+        color: "#d7ccc8",
+        foods: ["Big Breakfast", "Toast Set", "Croissant Sandwich", "Soup & Bread", "Quiche", "Chicken Pie", "Pesto Pasta", "Egg Mayo Sandwich"]
+      },
+      {
+        name: "🍱 Food Court Classics",
+        color: "#fdffb6",
+        foods: ["Economy Rice", "Mixed Rice", "Mixed Grill", "Honey Chicken Rice", "Sweet & Sour Fish Rice", "Sambal Squid Rice", "Butter Chicken Rice", "Salted Egg Chicken Rice"]
+      },
+      {
+        name: "⚡ Fast Food",
+        color: "#ffadad",
+        foods: ["Fried Chicken", "Burger Set", "Nuggets", "Wrap", "Fries Combo", "Chicken Tenders", "Fish Burger", "Spicy Chicken Burger"]
+      },
+      {
+        name: "🎲 Chaos",
+        color: "#c77dff",
+        foods: ["Your colleague decides", "First food you see on Grab", "Under RM15 Challenge", "Walk somewhere new", "Make it extra spicy", "Healthy only", "Spin again and accept", "Ask ChatGPT"]
+      },
+      {
+        name: "🌟 Lucky",
+        color: "#06d6a0",
+        foods: ["Golden Fork: Eat Anything", "Dessert Before Lunch", "Upgrade to Combo", "You Choose Everyone's Lunch", "Lucky Wallet", "Double Spin", "Buy Someone a Drink"]
+      },
+      {
+        name: "☠️ Legendary",
+        color: "#ef476f",
+        foods: ["Fast Today", "Leftovers Only", "No Phone During Lunch"]
+      },
+      {
+        name: "❓ Chef's Surprise",
+        color: "#f6c945",
+        foods: []
+      }
+    ];
+
+    const challenges = [
+      "Bring one colleague.",
+      "Try a drink you never order.",
+      "Rate your lunch out of 10.",
+      "Take a food photo for the office chat.",
+      "Sit with someone new.",
+      "No complaining for 30 minutes.",
+      "Recommend this food to one person.",
+      "Find the cheapest version nearby."
+    ];
+
+    const budgetByCategory = {
+      "🍛 Malaysian Rice": "RM10–25",
+      "🍜 Malaysian Noodles": "RM9–20",
+      "🥟 Hawker Favourites": "RM8–22",
+      "🍔 Burgers & Sandwiches": "RM12–30",
+      "🍕 Western": "RM18–45",
+      "🍣 Japanese": "RM18–50",
+      "🇰🇷 Korean": "RM18–45",
+      "🌮 Mexican & Middle Eastern": "RM15–35",
+      "🥗 Healthy Choices": "RM15–35",
+      "☕ Café Lunch": "RM15–40",
+      "🍱 Food Court Classics": "RM8–20",
+      "⚡ Fast Food": "RM12–30",
+      "🎲 Chaos": "Fate decides",
+      "🌟 Lucky": "Worth it",
+      "☠️ Legendary": "RM0–??",
+      "❓ Chef's Surprise": "Mystery"
+    };
+
+    const fortunes = [
+      "Your stomach has excellent project management today.",
+      "A great conversation may be hiding behind this lunch.",
+      "The fork has spoken. HR was not consulted.",
+      "Today's meal has main character energy.",
+      "May your queue be short and your portion generous.",
+      "Lunch fate has clocked in early today.",
+      "This is not just lunch. This is edible decision-making."
+    ];
+
+    const canvas = document.getElementById("wheel");
+    const ctx = canvas.getContext("2d");
+    const spinBtn = document.getElementById("spinBtn");
+    const copyBtn = document.getElementById("copyBtn");
+    const categoryEl = document.getElementById("category");
+    const foodEl = document.getElementById("food");
+    const fortuneEl = document.getElementById("fortune");
+    const budgetEl = document.getElementById("budget");
+    const challengeEl = document.getElementById("challenge");
+
+    const size = canvas.width;
+    const center = size / 2;
+    const radius = size * .45;
+    const arc = (Math.PI * 2) / categories.length;
+    let currentRotation = 0;
+    let currentResult = "";
+
+    function randomFrom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function allFoods() {
+      return categories
+        .filter(c => !["🎲 Chaos", "🌟 Lucky", "☠️ Legendary", "❓ Chef's Surprise"].includes(c.name))
+        .flatMap(c => c.foods);
+    }
+
+    function drawWheel() {
+      ctx.clearRect(0, 0, size, size);
+      categories.forEach((cat, i) => {
+        const angle = i * arc;
+        ctx.beginPath();
+        ctx.moveTo(center, center);
+        ctx.arc(center, center, radius, angle, angle + arc);
+        ctx.closePath();
+        ctx.fillStyle = cat.color;
+        ctx.fill();
+
+        ctx.save();
+        ctx.translate(center, center);
+        ctx.rotate(angle + arc / 2);
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#24170f";
+        ctx.font = "850 25px Inter, Arial";
+        const label = cat.name.length > 22 ? cat.name.slice(0, 20) + "…" : cat.name;
+        ctx.fillText(label, radius - 24, 9);
+        ctx.restore();
+
+        ctx.strokeStyle = "rgba(255,255,255,.72)";
+        ctx.lineWidth = 4;
+        ctx.stroke();
+      });
+
+      ctx.beginPath();
+      ctx.arc(center, center, radius, 0, Math.PI * 2);
+      ctx.lineWidth = 18;
+      ctx.strokeStyle = "rgba(255,255,255,.82)";
+      ctx.stroke();
+    }
+
+    function throwConfetti(amount = 70) {
+      for (let i = 0; i < amount; i++) {
+        const piece = document.createElement("div");
+        piece.className = "confetti";
+        piece.style.left = Math.random() * 100 + "vw";
+        piece.style.background = ["#ffd166", "#ef476f", "#06d6a0", "#118ab2", "#c77dff"][Math.floor(Math.random() * 5)];
+        piece.style.animationDelay = Math.random() * .45 + "s";
+        piece.style.transform = `rotate(${Math.random() * 360}deg)`;
+        document.body.appendChild(piece);
+        setTimeout(() => piece.remove(), 2400);
+      }
+    }
+
+    function spin() {
+      spinBtn.disabled = true;
+      foodEl.textContent = "Spinning...";
+      categoryEl.textContent = "🎡 Category loading...";
+      fortuneEl.textContent = "The wheel is checking everyone's lunch mood.";
+      budgetEl.textContent = "RM?";
+      challengeEl.textContent = "Pending";
+
+      const selectedIndex = Math.floor(Math.random() * categories.length);
+      const fullSpins = 6 + Math.floor(Math.random() * 4);
+      const sliceDegrees = 360 / categories.length;
+
+      /*
+        Pointer is at the top, which is 270 degrees on the canvas.
+        We rotate the selected slice centre exactly to that pointer.
+        This keeps the visual wheel result and the answer card in sync.
+      */
+      const selectedSliceCenter = selectedIndex * sliceDegrees + sliceDegrees / 2;
+      const currentNormalized = ((currentRotation % 360) + 360) % 360;
+      const desiredNormalized = (270 - selectedSliceCenter + 360) % 360;
+      let delta = desiredNormalized - currentNormalized;
+      if (delta < 0) delta += 360;
+
+      const newRotation = currentRotation + fullSpins * 360 + delta;
+      currentRotation = newRotation;
+
+      canvas.style.transform = `rotate(${newRotation}deg)`;
+
+      setTimeout(() => {
+        const selected = categories[selectedIndex];
+        let food = selected.name === "❓ Chef's Surprise" ? randomFrom(allFoods()) : randomFrom(selected.foods);
+
+        categoryEl.textContent = selected.name;
+        foodEl.textContent = food;
+        budgetEl.textContent = budgetByCategory[selected.name] || "RM?";
+        challengeEl.textContent = randomFrom(challenges);
+        fortuneEl.textContent = randomFrom(fortunes);
+        currentResult = `${selected.name}: ${food}`;
+
+        if (["🌟 Lucky", "❓ Chef's Surprise"].includes(selected.name)) {
+          throwConfetti(90);
+        }
+
+        spinBtn.disabled = false;
+      }, 5900);
+    }
+
+    async function copyResult() {
+      const text = `🎲 Today's Lunch Roulette: ${currentResult || "Not spun yet"}`;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyBtn.textContent = "✅ Copied!";
+        setTimeout(() => copyBtn.textContent = "📋 Copy Result", 1200);
+      } catch {
+        alert(text);
+      }
+    }
+
+
+    let deferredPrompt;
+    const installBtn = document.getElementById("installBtn");
+
+    window.addEventListener("beforeinstallprompt", (event) => {
+      event.preventDefault();
+      deferredPrompt = event;
+      installBtn.style.display = "inline-flex";
+    });
+
+    installBtn.addEventListener("click", async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      installBtn.style.display = "none";
+    });
+
+    if ("serviceWorker" in navigator) {
+      window.addEventListener("load", () => {
+        navigator.serviceWorker.register("./sw.js").catch(() => {});
+      });
+    }
+
+
+    drawWheel();
+    spinBtn.addEventListener("click", spin);
+    copyBtn.addEventListener("click", copyResult);
+  </script>
+</body>
+</html>
